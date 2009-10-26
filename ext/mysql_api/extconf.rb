@@ -1,10 +1,14 @@
 # Darwin (OSX) special cases for universal binaries
 # This is to avoid the lack of UB binaries for MySQL
-if RUBY_PLATFORM =~ /darwin/
-  ENV["RC_ARCHS"] = `uname -m`.chomp if `uname -sr` =~ /^Darwin/
- 
-  # On PowerPC the defaults are fine
-  ENV["RC_ARCHS"] = '' if `uname -m` =~ /^Power Macintosh/
+if !ENV["RC_ARCHS"] && RUBY_PLATFORM =~ /darwin/
+	mc_path = `which mysql_config`
+	ml_path = mc_path.split('bin')[0] + 'lib/libmysqlclient.dylib'
+	archs = []
+	lipo_archs = `lipo -info #{ml_path}`
+  archs << 'i386' if lipo_archs =~ /i386/
+  archs << 'x86_64' if lipo_archs =~ /x86_64/
+  archs << 'ppc' if lipo_archs =~ /ppc/
+ 	ENV["RC_ARCHS"] = archs.join(' ')
 end
 
 require 'mkmf'
